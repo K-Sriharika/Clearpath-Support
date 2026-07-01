@@ -1,58 +1,65 @@
-# Clearpath Support RAG Agent
+# Clearpath Support Agent — Engineering Deliverable
 
-A RAG-powered support agent that answers questions grounded in the Clearpath
-knowledge base (FAQ, release notes, runbook), with fallback handling for
-out-of-scope queries and LLM-as-judge evaluation.
+A RAG-powered support agent for Clearpath Support Systems, built to replace the
+current manual process where agents search three disconnected knowledge bases
+(FAQ, release notes, runbook) and customers receive inconsistent answers when a
+product update outpaces the runbook.
 
-## Quick Start
+This repository contains all three tasks of the deliverable, each in its own folder.
 
+## Task 1 — RAG agent implementation → [`task1-rag-agent/`](task1-rag-agent/)
+
+The core engineering deliverable: a working RAG pipeline that chunks and embeds
+the three KB documents, retrieves grounded passages, and answers strictly from
+retrieved content. Includes a two-stage fallback for out-of-scope questions
+(cosine-threshold gate + model self-assessment), cost-tiered model selection
+(Haiku for generation, Sonnet for judging), and an 8-query LLM-as-a-judge
+evaluation. A standalone `demo.html` provides an interactive UI with a live
+retrieval-trace panel.
+
+Run it:
 ```bash
-# 1. Install dependencies
-pip install numpy anthropic
-
-# 2. Set your API key (optional — TF-IDF fallback works without it)
-export ANTHROPIC_API_KEY=sk-ant-...
-
-# 3. Build the vector index
+cd task1-rag-agent
+pip install -r requirements.txt
 python src/build_index.py
-
-# 4. Ask a question (CLI)
-python src/rag_pipeline.py
-
-# 5. Run the evaluation suite
-python evaluation/eval_suite.py
+python src/rag_pipeline.py        # interactive CLI
+python evaluation/eval_suite.py   # LLM-as-judge evaluation
 ```
 
-## Architecture
+## Task 2 — Architecture diagram & rationale → [`task2-architecture/`](task2-architecture/)
 
-See `ARCHITECTURE.md` for the full design rationale.
+A working design artifact for the engineering review: an end-to-end architecture
+diagram covering ingestion, embedding, vector storage, retrieval, generation,
+fallback routing, and evaluation, with labeled data flows, explicit state
+boundaries, concurrency handling, and failure modes. The accompanying rationale
+(one page) explains the key decisions and the single-tenant → multi-tenant
+production path, specific to Clearpath's situation.
 
-## Cost Model
+- `diagram/architecture_diagram.svg` / `.png` — the diagram
+- `ARCHITECTURE_RATIONALE.md` — the written rationale
 
-| Operation | Cost |
-|-----------|------|
-| KB indexing (Voyage, one-time) | ~$0.000036 |
-| Per query (Haiku generation) | ~$0.0003 |
-| 300 queries/day | ~$0.09/day |
-| LLM judge eval (Sonnet, 8 calls) | ~$0.02 one-time |
+## Task 3 — Vector store, schema & retrieval integration → [`task3-vector-store/`](task3-vector-store/)
 
-## Key Design Choices
+A ChromaDB-backed vector store with a schema (embedding + source document +
+chunk index + raw text) that supports metadata-filtered retrieval at query
+time, not as a post-processing step. Uses cosine distance (explained in
+`vector_store.py`), and demonstrates both base semantic search and
+source-filtered search in a runnable test script.
 
-- **Chunk by semantic unit:** one Q&A pair, one version block, one issue
-- **voyage-3-lite** for embeddings (TF-IDF fallback if API unavailable)
-- **claude-haiku-4-5** for generation (cost-optimised; Sonnet for judge)
-- **Two-stage fallback:** cosine threshold gate + model self-assessment
-- **Content hash caching:** KB re-embedded only when files change
-
-## Files
-
+Run it:
+```bash
+cd task3-vector-store
+pip install -r requirements.txt
+python src/build_index.py
+python tests/test_retrieval.py
 ```
-src/chunker.py        — KB ingestion and chunking
-src/embedder.py       — Embedding, vector store, retrieval
-src/agent.py          — Answer generation + judge evaluation
-src/build_index.py    — Build/refresh the vector store
-src/rag_pipeline.py   — Top-level pipeline + interactive CLI
-evaluation/           — Eval harness and results
-knowledge_base/       — The three source KB files
-ARCHITECTURE.md       — Full design rationale and diagrams
-```
+
+## Shared conventions across tasks
+
+- **Embeddings:** `voyage-3-lite` when `ANTHROPIC_API_KEY` is set; a zero-cost,
+  zero-dependency TF-IDF fallback otherwise. The same fallback keeps every task
+  runnable offline.
+- **Chunking:** one semantic unit per chunk (one Q&A pair, one version block,
+  one runbook issue), carrying `source` + `chunk_index` metadata.
+- **Cost discipline:** cheap model for generation, capable model reserved for
+  evaluation; retrieval capped at top-3 to bound prompt tokens.

@@ -1,0 +1,111 @@
+<svg viewBox="0 0 980 620" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4a5568"/>
+    </marker>
+  </defs>
+  <rect width="980" height="620" fill="#ffffff"/>
+  <text x="490" y="34" text-anchor="middle" font-size="20" font-weight="700" fill="#1a202c">Clearpath Vector Store — Architecture</text>
+
+  <!-- KB files -->
+  <g>
+    <rect x="30" y="80" width="190" height="150" rx="8" fill="#f7fafc" stroke="#a0aec0" stroke-width="1.5"/>
+    <text x="125" y="102" text-anchor="middle" font-size="13" font-weight="600" fill="#2d3748">Knowledge Base</text>
+    <text x="45" y="128" font-size="11" fill="#4a5568">clearpath_faq.txt</text>
+    <text x="45" y="150" font-size="11" fill="#4a5568">clearpath_releases.txt</text>
+    <text x="45" y="172" font-size="11" fill="#4a5568">clearpath_runbook.txt</text>
+    <text x="45" y="205" font-size="10" fill="#718096">(plain text, flat files)</text>
+  </g>
+
+  <!-- Chunker -->
+  <g>
+    <rect x="270" y="80" width="190" height="150" rx="8" fill="#ebf8ff" stroke="#4299e1" stroke-width="1.5"/>
+    <text x="365" y="102" text-anchor="middle" font-size="13" font-weight="600" fill="#2b6cb0">chunker.py</text>
+    <text x="285" y="128" font-size="11" fill="#2c5282">Splits on structural</text>
+    <text x="285" y="144" font-size="11" fill="#2c5282">markers: Q/A pair,</text>
+    <text x="285" y="160" font-size="11" fill="#2c5282">version block, issue</text>
+    <text x="285" y="186" font-size="10" fill="#4a5568">→ {source, chunk_index,</text>
+    <text x="285" y="200" font-size="10" fill="#4a5568">   chunk_type, text}</text>
+  </g>
+
+  <!-- Embedder -->
+  <g>
+    <rect x="510" y="80" width="200" height="150" rx="8" fill="#faf5ff" stroke="#9f7aea" stroke-width="1.5"/>
+    <text x="610" y="102" text-anchor="middle" font-size="13" font-weight="600" fill="#6b46c1">embedder.py</text>
+    <text x="525" y="128" font-size="11" fill="#553c9a">Primary: Voyage</text>
+    <text x="525" y="144" font-size="11" fill="#553c9a">(voyage-3-lite)</text>
+    <text x="525" y="164" font-size="11" fill="#553c9a">Fallback: TF-IDF</text>
+    <text x="525" y="180" font-size="11" fill="#553c9a">(fixed corpus vocab)</text>
+    <text x="525" y="205" font-size="10" fill="#718096">All vectors L2-normalized</text>
+  </g>
+
+  <!-- Vector store -->
+  <g>
+    <rect x="760" y="60" width="190" height="190" rx="8" fill="#f0fff4" stroke="#48bb78" stroke-width="1.5"/>
+    <text x="855" y="82" text-anchor="middle" font-size="13" font-weight="600" fill="#276749">Chroma collection</text>
+    <text x="855" y="98" text-anchor="middle" font-size="11" fill="#276749">"clearpath_kb"</text>
+    <line x1="775" y1="108" x2="935" y2="108" stroke="#c6f6d5"/>
+    <text x="775" y="126" font-size="10" fill="#2f855a">id: source::chunk_index</text>
+    <text x="775" y="142" font-size="10" fill="#2f855a">embedding: vector</text>
+    <text x="775" y="158" font-size="10" fill="#2f855a">document: chunk text</text>
+    <text x="775" y="174" font-size="10" fill="#2f855a">metadata.source</text>
+    <text x="775" y="190" font-size="10" fill="#2f855a">metadata.chunk_index</text>
+    <text x="775" y="206" font-size="10" fill="#2f855a">metadata.chunk_type</text>
+    <text x="775" y="222" font-size="10" fill="#2f855a">metadata.text</text>
+    <text x="775" y="240" font-size="9" fill="#718096">space: cosine (hnsw)</text>
+  </g>
+
+  <!-- arrows top row -->
+  <path d="M220,155 L268,155" stroke="#4a5568" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M460,155 L508,155" stroke="#4a5568" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M710,150 L758,150" stroke="#4a5568" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <text x="490" y="60" text-anchor="middle" font-size="11" fill="#718096">build_index.py orchestrates: ingest → chunk → embed → index_chunks()</text>
+
+  <!-- Query path -->
+  <g>
+    <rect x="30" y="330" width="190" height="90" rx="8" fill="#fffaf0" stroke="#ed8936" stroke-width="1.5"/>
+    <text x="125" y="358" text-anchor="middle" font-size="13" font-weight="600" fill="#9c4221">Support agent query</text>
+    <text x="45" y="382" font-size="10" fill="#7b341e">"webhook delivery</text>
+    <text x="45" y="398" font-size="10" fill="#7b341e">failed, what happens?"</text>
+  </g>
+
+  <path d="M125,420 L125,460" stroke="#4a5568" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="30" y="460" width="190" height="90" rx="8" fill="#faf5ff" stroke="#9f7aea" stroke-width="1.5"/>
+    <text x="125" y="488" text-anchor="middle" font-size="12" font-weight="600" fill="#6b46c1">embed_query_text()</text>
+    <text x="45" y="512" font-size="10" fill="#553c9a">project into same</text>
+    <text x="45" y="528" font-size="10" fill="#553c9a">vector space as index</text>
+  </g>
+
+  <path d="M220,505 L400,436" stroke="#4a5568" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="330" y="330" width="290" height="190" rx="8" fill="#f0fff4" stroke="#48bb78" stroke-width="1.5"/>
+    <text x="475" y="356" text-anchor="middle" font-size="13" font-weight="600" fill="#276749">vector_store.py</text>
+    <rect x="350" y="374" width="240" height="56" rx="6" fill="#ffffff" stroke="#68d391"/>
+    <text x="470" y="394" text-anchor="middle" font-size="11" font-weight="600" fill="#2f855a">semantic_search()</text>
+    <text x="470" y="412" text-anchor="middle" font-size="9" fill="#4a5568">cosine rank, whole collection</text>
+    <rect x="350" y="440" width="240" height="64" rx="6" fill="#ffffff" stroke="#68d391"/>
+    <text x="470" y="460" text-anchor="middle" font-size="11" font-weight="600" fill="#2f855a">filtered_search()</text>
+    <text x="470" y="478" text-anchor="middle" font-size="9" fill="#4a5568">where={"source": "..."}  </text>
+    <text x="470" y="492" text-anchor="middle" font-size="9" fill="#4a5568">applied at query time, not after</text>
+  </g>
+
+  <path d="M620,420 L760,340" stroke="#4a5568" stroke-width="1.5" marker-end="url(#arrow)" stroke-dasharray="4 3"/>
+  <text x="700" y="370" font-size="9" fill="#718096">queries against</text>
+
+  <g>
+    <rect x="680" y="330" width="270" height="120" rx="8" fill="#f7fafc" stroke="#a0aec0" stroke-width="1.5"/>
+    <text x="815" y="356" text-anchor="middle" font-size="13" font-weight="600" fill="#2d3748">Ranked results</text>
+    <text x="695" y="382" font-size="10" fill="#4a5568">[{source, chunk_index,</text>
+    <text x="695" y="398" font-size="10" fill="#4a5568">  chunk_type, text,</text>
+    <text x="695" y="414" font-size="10" fill="#4a5568">  distance, similarity}, ...]</text>
+    <text x="695" y="436" font-size="9" fill="#718096">top_k results, best-first</text>
+  </g>
+
+  <path d="M620,420 L680,395" stroke="#4a5568" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <text x="490" y="580" text-anchor="middle" font-size="11" fill="#718096">Persisted at ./chroma_db (Chroma) and ./tfidf_model.json (fallback vocab) — recreate the whole store with: python src/build_index.py</text>
+</svg>

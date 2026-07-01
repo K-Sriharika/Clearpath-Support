@@ -1,0 +1,14 @@
+Issue: Agent cannot log in
+Steps: 1. Confirm account is not suspended (Admin > Users > check status). 2. Ask agent to clear browser cache and retry. 3. If SSO is enabled, verify IdP metadata has not expired. 4. Escalate to engineering if issue persists after IdP check.
+
+Issue: Webhook not firing
+Steps: 1. Check webhook URL is reachable (HTTP 200 on GET). 2. Confirm the event type is selected in Settings > Integrations > Webhooks. 3. Review webhook delivery log for error codes. 4. Note: as of v2.3.5, failed deliveries retry 3 times at 5-minute intervals — wait 15 minutes before escalating.
+
+Issue: Tickets not routing to correct team
+Steps: 1. Confirm a Label is applied to the ticket (Tags do not trigger routing). 2. Check that the Label-based routing rule exists under Settings > Automation > Routing. 3. Verify the target team has at least one active agent. 4. Routing rules are evaluated in order — check for a higher-priority rule overriding the expected one.
+
+Issue: Export email not received
+Steps: 1. Check spam folder. 2. Confirm the requesting agent's email is verified under Profile > Email. 3. If export contains >90 days of data, the request will silently fail — re-run with a valid range.
+
+Issue: AI Suggested Replies not appearing
+Steps: 1. Confirm AI Features are enabled under Settings > AI Features (opt-in required, added v2.3.0). 2. Verify the workspace is on Pro plan or above. 3. Suggestions only appear for tickets with at least one prior customer message — new tickets show no suggestions.

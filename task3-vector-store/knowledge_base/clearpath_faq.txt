@@ -1,0 +1,17 @@
+Q: How do I invite a teammate to my workspace?
+A: Go to Settings > Team > Invite Member. Enter their email and choose a role (Admin, Agent, or Viewer). They will receive an invite link valid for 48 hours.
+
+Q: Can I connect multiple inboxes to one workspace?
+A: Yes. Clearpath supports up to 10 inboxes per workspace on the Pro plan. Go to Settings > Inboxes > Add Inbox and follow the channel-specific setup wizard.
+
+Q: Why are my CSAT scores not updating?
+A: CSAT scores refresh every 24 hours. If scores are still stale after 24 hours, check that the CSAT survey trigger is enabled under Settings > Surveys > CSAT. Scores will not populate if fewer than 5 responses have been collected in the period.
+
+Q: How do I export ticket data?
+A: Navigate to Reports > Export. Choose a date range (max 90 days), select fields, and click Download CSV. Exports are emailed to the requesting agent within 10 minutes.
+
+Q: What is the difference between a Tag and a Label?
+A: Tags are free-text and agent-assigned. Labels are predefined by admins and used for routing rules. Both appear on the ticket detail view but only Labels can trigger automation.
+
+Q: How do I set up a SLA policy?
+A: Go to Settings > SLAs > New Policy. Define first-response and resolution targets per priority level. Assign the policy to an inbox or team. SLA breach alerts are sent to team leads by email.

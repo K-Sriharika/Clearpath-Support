@@ -6,8 +6,10 @@ __pycache__/
 venv/
 .venv/
 
-# Generated at runtime — not committed
-vector_store.json
+# Generated at runtime — rebuilt from source by build_index.py
+task1-rag-agent/vector_store.json
+task3-vector-store/chroma_db/
+task3-vector-store/tfidf_model.json
 
 # OS
 .DS_Store
