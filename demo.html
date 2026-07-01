@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clearpath Support Agent — RAG Demo</title>
+<style>
+  /* Design: terminal-meets-support-desk. Monochrome base, amber accent.
+     Signature: the "retrieval trace" panel — shows agents what the system
+     retrieved, building trust through transparency. */
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --amber: #f59e0b;
+    --amber-dim: #78400a;
+    --green: #22c55e;
+    --red: #ef4444;
+    --blue: #60a5fa;
+    --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --sans: 'Inter', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo {
+    width: 28px; height: 28px;
+    background: var(--amber);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: #000;
+    flex-shrink: 0;
+  }
+  header h1 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+  header span { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+  .badge {
+    margin-left: auto;
+    font-size: 11px; font-family: var(--mono);
+    background: var(--amber-dim);
+    color: var(--amber);
+    padding: 3px 8px; border-radius: 4px;
+  }
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 0;
+    overflow: hidden;
+    height: calc(100vh - 57px);
+  }
+  .chat-panel {
+    display: flex; flex-direction: column;
+    border-right: 1px solid var(--border);
+  }
+  .messages {
+    flex: 1; overflow-y: auto;
+    padding: 24px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  .msg { display: flex; gap: 12px; }
+  .msg-avatar {
+    width: 28px; height: 28px; border-radius: 6px;
+    flex-shrink: 0; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+  }
+  .msg.user .msg-avatar { background: #2d3748; color: var(--text); }
+  .msg.agent .msg-avatar { background: var(--amber); color: #000; }
+  .msg.system .msg-avatar { background: var(--border); color: var(--muted); }
+  .msg-content { flex: 1; }
+  .msg-role { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-bottom: 6px; }
+  .msg-text {
+    font-size: 14px; line-height: 1.65; color: var(--text);
+    white-space: pre-wrap;
+  }
+  .msg-text strong { color: var(--amber); }
+  .msg-text code {
+    font-family: var(--mono); font-size: 12px;
+    background: var(--surface); padding: 2px 5px; border-radius: 3px;
+  }
+  .fallback-msg { color: var(--muted); }
+  .fallback-msg .fallback-label {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-family: var(--mono);
+    color: var(--amber); background: var(--amber-dim);
+    padding: 3px 8px; border-radius: 4px; margin-bottom: 8px;
+  }
+  .sources-line {
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 11px; color: var(--muted); font-family: var(--mono);
+  }
+  .source-tag {
+    display: inline-block;
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 2px 6px; border-radius: 3px; margin-right: 6px;
+    color: var(--blue);
+  }
+  .input-area {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    display: flex; gap: 10px;
+  }
+  .input-area input {
+    flex: 1; background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px;
+    color: var(--text); font-size: 14px; font-family: var(--sans);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .input-area input:focus { border-color: var(--amber); }
+  .input-area input::placeholder { color: var(--muted); }
+  .send-btn {
+    background: var(--amber); color: #000;
+    border: none; border-radius: 8px;
+    padding: 10px 18px; font-size: 13px; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+    transition: opacity 0.15s;
+  }
+  .send-btn:hover { opacity: 0.85; }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  /* Right panel — retrieval trace */
+  .trace-panel {
+    display: flex; flex-direction: column;
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .trace-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px; font-family: var(--mono);
+    color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .trace-header .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--muted);
+  }
+  .trace-header .dot.active { background: var(--green); }
+  .trace-content { flex: 1; overflow-y: auto; padding: 16px; }
+  .trace-empty {
+    color: var(--muted); font-size: 13px; font-family: var(--mono);
+    text-align: center; margin-top: 48px; line-height: 1.8;
+  }
+  .chunk-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px;
+    margin-bottom: 12px;
+  }
+  .chunk-rank {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .chunk-label { font-size: 11px; font-family: var(--mono); color: var(--blue); }
+  .chunk-score {
+    font-size: 11px; font-family: var(--mono);
+    padding: 2px 6px; border-radius: 3px;
+  }
+  .chunk-score.high { background: #14532d; color: #4ade80; }
+  .chunk-score.mid { background: #1c3a5e; color: var(--blue); }
+  .chunk-score.low { background: #3d1a1a; color: #f87171; }
+  .chunk-type {
+    font-size: 10px; font-family: var(--mono);
+    color: var(--muted); margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .chunk-text {
+    font-size: 12px; line-height: 1.55; color: #9ca3af;
+    white-space: pre-wrap;
+  }
+  .confidence-bar {
+    margin-bottom: 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px;
+  }
+  .confidence-label {
+    font-size: 11px; font-family: var(--mono); color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .confidence-track {
+    height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;
+  }
+  .confidence-fill {
+    height: 100%; border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+  .confidence-fill.high { background: var(--green); }
+  .confidence-fill.mid { background: var(--amber); }
+  .confidence-fill.very-low { background: var(--red); }
+  .confidence-value {
+    font-size: 12px; font-family: var(--mono);
+    margin-top: 6px;
+  }
+  .sample-qs {
+    padding: 0 24px 16px;
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .sample-q {
+    font-size: 12px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 20px;
+    padding: 5px 12px; cursor: pointer; color: var(--text);
+    transition: border-color 0.15s;
+    white-space: nowrap;
+  }
+  .sample-q:hover { border-color: var(--amber); color: var(--amber); }
+  .typing { color: var(--amber); font-family: var(--mono); font-size: 13px; }
+  .typing span { animation: blink 1s infinite; }
+  @keyframes blink { 0%,100% { opacity:1 } 50% { opacity:0 } }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">CP</div>
+  <h1>Clearpath Support Agent</h1>
+  <span>RAG Prototype · claude-haiku-4-5</span>
+  <div class="badge">DEMO</div>
+</header>
+<main>
+  <div class="chat-panel">
+    <div class="messages" id="messages">
+      <div class="msg system">
+        <div class="msg-avatar">⚡</div>
+        <div class="msg-content">
+          <div class="msg-role">system</div>
+          <div class="msg-text">Knowledge base indexed. 15 chunks from 3 documents (FAQ, releases, runbook). Ask any support question.</div>
+        </div>
+      </div>
+    </div>
+    <div class="sample-qs" id="sampleQs">
+      <div class="sample-q" onclick="useExample(this.textContent)">Invite a team member</div>
+      <div class="sample-q" onclick="useExample(this.textContent)">Agent can't log in</div>
+      <div class="sample-q" onclick="useExample(this.textContent)">Webhook not retrying</div>
+      <div class="sample-q" onclick="useExample(this.textContent)">Tickets not routing</div>
+      <div class="sample-q" onclick="useExample(this.textContent)">CSAT not updating</div>
+      <div class="sample-q" onclick="useExample(this.textContent)">Export date limit?</div>
+      <div class="sample-q" onclick="useExample(this.textContent)">AI replies not showing</div>
+      <div class="sample-q" onclick="useExample(this.textContent)">Salesforce integration</div>
+    </div>
+    <div class="input-area">
+      <input type="text" id="queryInput" placeholder="Ask a support question…" onkeydown="if(event.key==='Enter') sendQuery()">
+      <button class="send-btn" id="sendBtn" onclick="sendQuery()">Ask</button>
+    </div>
+  </div>
+  <div class="trace-panel">
+    <div class="trace-header">
+      <div class="dot" id="traceDot"></div>
+      retrieval trace
+    </div>
+    <div class="trace-content" id="traceContent">
+      <div class="trace-empty">Retrieval trace<br>appears here</div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ── Knowledge base (embedded for standalone demo) ─────────────────────────
+
+const KB_CHUNKS = [
+  { source: "clearpath_faq.txt", idx: 0, type: "faq",
+    text: "Q: How do I invite a teammate to my workspace?\nA: Go to Settings > Team > Invite Member. Enter their email and choose a role (Admin, Agent, or Viewer). They will receive an invite link valid for 48 hours." },
+  { source: "clearpath_faq.txt", idx: 1, type: "faq",
+    text: "Q: Can I connect multiple inboxes to one workspace?\nA: Yes. Clearpath supports up to 10 inboxes per workspace on the Pro plan. Go to Settings > Inboxes > Add Inbox and follow the channel-specific setup wizard." },
+  { source: "clearpath_faq.txt", idx: 2, type: "faq",
+    text: "Q: Why are my CSAT scores not updating?\nA: CSAT scores refresh every 24 hours. If scores are still stale after 24 hours, check that the CSAT survey trigger is enabled under Settings > Surveys > CSAT. Scores will not populate if fewer than 5 responses have been collected in the period." },
+  { source: "clearpath_faq.txt", idx: 3, type: "faq",
+    text: "Q: How do I export ticket data?\nA: Navigate to Reports > Export. Choose a date range (max 90 days), select fields, and click Download CSV. Exports are emailed to the requesting agent within 10 minutes." },
+  { source: "clearpath_faq.txt", idx: 4, type: "faq",
+    text: "Q: What is the difference between a Tag and a Label?\nA: Tags are free-text and agent-assigned. Labels are predefined by admins and used for routing rules. Both appear on the ticket detail view but only Labels can trigger automation." },
+  { source: "clearpath_faq.txt", idx: 5, type: "faq",
+    text: "Q: How do I set up a SLA policy?\nA: Go to Settings > SLAs > New Policy. Define first-response and resolution targets per priority level. Assign the policy to an inbox or team. SLA breach alerts are sent to team leads by email." },
+  { source: "clearpath_releases.txt", idx: 0, type: "release_note",
+    text: "v2.4.0 — 2024-11-12\n- Added bulk-close for tickets: select up to 200 tickets from queue and close in one action.\n- Fixed: CSAT survey not sending when ticket closed via API.\n- Fixed: Inbox filter resetting after browser refresh." },
+  { source: "clearpath_releases.txt", idx: 1, type: "release_note",
+    text: "v2.3.5 — 2024-10-01\n- Performance: ticket list now loads 60% faster for workspaces with >50k tickets.\n- Added: webhook retry logic — failed webhook deliveries now retry 3 times at 5-minute intervals.\n- Changed: Export date range limit increased from 30 days to 90 days." },
+  { source: "clearpath_releases.txt", idx: 2, type: "release_note",
+    text: "v2.3.0 — 2024-09-03\n- Introduced AI Suggested Replies (beta): agents see up to 3 LLM-generated reply suggestions per ticket. Opt in under Settings > AI Features.\n- Added: Custom roles — admins can now define roles beyond Admin/Agent/Viewer.\n- Fixed: Duplicate ticket creation when email contains inline images." },
+  { source: "clearpath_releases.txt", idx: 3, type: "release_note",
+    text: "v2.2.0 — 2024-07-15\n- Introduced Label-based routing: tickets with matching Labels are automatically routed to the designated team.\n- Added: Dark mode (beta) — toggle under Profile > Appearance.\n- Fixed: SLA timer not pausing when ticket status set to Pending." },
+  { source: "clearpath_runbook.txt", idx: 0, type: "runbook",
+    text: "Issue: Agent cannot log in\nSteps: 1. Confirm account is not suspended (Admin > Users > check status). 2. Ask agent to clear browser cache and retry. 3. If SSO is enabled, verify IdP metadata has not expired. 4. Escalate to engineering if issue persists after IdP check." },
+  { source: "clearpath_runbook.txt", idx: 1, type: "runbook",
+    text: "Issue: Webhook not firing\nSteps: 1. Check webhook URL is reachable (HTTP 200 on GET). 2. Confirm the event type is selected in Settings > Integrations > Webhooks. 3. Review webhook delivery log for error codes. 4. Note: as of v2.3.5, failed deliveries retry 3 times at 5-minute intervals — wait 15 minutes before escalating." },
+  { source: "clearpath_runbook.txt", idx: 2, type: "runbook",
+    text: "Issue: Tickets not routing to correct team\nSteps: 1. Confirm a Label is applied to the ticket (Tags do not trigger routing). 2. Check that the Label-based routing rule exists under Settings > Automation > Routing. 3. Verify the target team has at least one active agent. 4. Routing rules are evaluated in order — check for a higher-priority rule overriding the expected one." },
+  { source: "clearpath_runbook.txt", idx: 3, type: "runbook",
+    text: "Issue: Export email not received\nSteps: 1. Check spam folder. 2. Confirm the requesting agent's email is verified under Profile > Email. 3. If export contains >90 days of data, the request will silently fail — re-run with a valid range." },
+  { source: "clearpath_runbook.txt", idx: 4, type: "runbook",
+    text: "Issue: AI Suggested Replies not appearing\nSteps: 1. Confirm AI Features are enabled under Settings > AI Features (opt-in required, added v2.3.0). 2. Verify the workspace is on Pro plan or above. 3. Suggestions only appear for tickets with at least one prior customer message — new tickets show no suggestions." },
+];
+
+// ── TF-IDF retrieval ──────────────────────────────────────────────────────
+
+const STOPWORDS = new Set("a an the is are was were be been being have has had do does did will would could should may might shall can i we you they he she it this that these those and or but not of in on at to for with by from as if so no my your our their its".split(" "));
+
+function tokenise(text) {
+  return text.toLowerCase().replace(/[^\w\s]/g, ' ').split(/\s+/).filter(t => t.length > 1 && !STOPWORDS.has(t));
+}
+
+function buildTFIDF(texts) {
+  const tokenised = texts.map(tokenise);
+  const vocab = [...new Set(tokenised.flat())].sort();
+  const vidx = Object.fromEntries(vocab.map((w, i) => [w, i]));
+  const V = vocab.length, N = texts.length;
+  const tf = tokenised.map(toks => {
+    const vec = new Float32Array(V);
+    toks.forEach(t => { if (vidx[t] !== undefined) vec[vidx[t]]++; });
+    const total = vec.reduce((a, b) => a + b, 0) || 1;
+    return vec.map(x => x / total);
+  });
+  const idf = vocab.map((_, j) => {
+    const df = tf.filter(v => v[j] > 0).length;
+    return Math.log((N + 1) / (df + 1)) + 1;
+  });
+  return { vocab, vidx, idf, V, tf };
+}
+
+function vectorise(tokens, vidx, idf, V, tf_base) {
+  const vec = new Float32Array(V);
+  tokens.forEach(t => { if (vidx[t] !== undefined) vec[vidx[t]]++; });
+  const total = vec.reduce((a, b) => a + b, 0) || 1;
+  return vec.map((x, j) => (x / total) * idf[j]);
+}
+
+function cosine(a, b) {
+  let dot = 0, na = 0, nb = 0;
+  for (let i = 0; i < a.length; i++) { dot += a[i]*b[i]; na += a[i]*a[i]; nb += b[i]*b[i]; }
+  const d = Math.sqrt(na) * Math.sqrt(nb);
+  return d > 0 ? dot / d : 0;
+}
+
+const CHUNK_TEXTS = KB_CHUNKS.map(c => c.text);
+const TFIDF = buildTFIDF(CHUNK_TEXTS);
+
+function retrieve(query, topK = 3) {
+  const allTexts = [...CHUNK_TEXTS, query];
+  const allTFIDF = buildTFIDF(allTexts);
+  const qVec = allTFIDF.tf[allTexts.length - 1].map((x, j) => x * allTFIDF.idf[j]);
+  const scores = allTFIDF.tf.slice(0, -1).map((v, i) => {
+    const chunkVec = v.map((x, j) => x * allTFIDF.idf[j]);
+    return { score: cosine(qVec, chunkVec), chunk: KB_CHUNKS[i] };
+  });
+  return scores.sort((a, b) => b.score - a.score).slice(0, topK);
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────
+
+const CONFIDENCE_THRESHOLD = 0.15;
+
+function addMessage(role, html, sources) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const avatarText = role === 'user' ? 'U' : role === 'agent' ? 'CP' : '⚡';
+  const roleLabel = role === 'user' ? 'you' : role === 'agent' ? 'support agent' : 'system';
+  div.innerHTML = `
+    <div class="msg-avatar">${avatarText}</div>
+    <div class="msg-content">
+      <div class="msg-role">${roleLabel}</div>
+      <div class="msg-text">${html}</div>
+      ${sources ? `<div class="sources-line">Sources: ${sources}</div>` : ''}
+    </div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTrace(retrieved, topScore) {
+  const dot = document.getElementById('traceDot');
+  const tc = document.getElementById('traceContent');
+  dot.className = 'dot active';
+
+  const pct = Math.min(topScore / 0.6, 1) * 100;
+  const cls = topScore >= 0.3 ? 'high' : topScore >= 0.15 ? 'mid' : 'very-low';
+  const status = topScore >= CONFIDENCE_THRESHOLD ? 'CONFIDENT' : 'LOW CONFIDENCE → FALLBACK';
+
+  tc.innerHTML = `
+    <div class="confidence-bar">
+      <div class="confidence-label">top retrieval score</div>
+      <div class="confidence-track"><div class="confidence-fill ${cls}" style="width:${pct}%"></div></div>
+      <div class="confidence-value" style="color: var(--${cls === 'very-low' ? 'red' : cls === 'mid' ? 'amber' : 'green'})">${topScore.toFixed(3)} — ${status}</div>
+    </div>
+    ${retrieved.map((r, i) => {
+      const sc = r.score;
+      const scoreCls = sc >= 0.3 ? 'high' : sc >= 0.15 ? 'mid' : 'low';
+      const fileName = r.chunk.source.replace('clearpath_', '').replace('.txt', '');
+      return `
+        <div class="chunk-card">
+          <div class="chunk-rank">
+            <div class="chunk-label">SOURCE ${i+1} · ${fileName} #${r.chunk.idx}</div>
+            <div class="chunk-score ${scoreCls}">${sc.toFixed(3)}</div>
+          </div>
+          <div class="chunk-type">${r.chunk.type.replace('_', ' ')}</div>
+          <div class="chunk-text">${r.chunk.text.substring(0, 180)}${r.chunk.text.length > 180 ? '…' : ''}</div>
+        </div>
+      `;
+    }).join('')}
+  `;
+}
+
+function useExample(text) {
+  document.getElementById('queryInput').value = text;
+  sendQuery();
+}
+
+let isLoading = false;
+
+async function sendQuery() {
+  if (isLoading) return;
+  const input = document.getElementById('queryInput');
+  const query = input.value.trim();
+  if (!query) return;
+
+  input.value = '';
+  isLoading = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  addMessage('user', escapeHtml(query));
+
+  // Retrieve
+  const retrieved = retrieve(query, 3);
+  const topScore = retrieved[0]?.score || 0;
+  showTrace(retrieved, topScore);
+
+  // Show typing
+  const msgs = document.getElementById('messages');
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'msg agent';
+  typingDiv.innerHTML = `<div class="msg-avatar">CP</div><div class="msg-content"><div class="msg-role">support agent</div><div class="msg-text typing">thinking<span>…</span></div></div>`;
+  msgs.appendChild(typingDiv);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  // If below threshold, return fallback immediately
+  if (topScore < CONFIDENCE_THRESHOLD) {
+    await sleep(600);
+    typingDiv.remove();
+    const fallback = `<span class="fallback-label">⚠ NO CONFIDENT MATCH</span>\n\nI couldn't find a confident answer to that in the Clearpath knowledge base.\n\n<strong>Suggested next steps:</strong>\n• Try rephrasing with different keywords\n• Escalate to your team lead\n• Flag this as a KB gap so it can be documented`;
+    addMessage('agent', `<div class="fallback-msg">${fallback}</div>`);
+    isLoading = false;
+    document.getElementById('sendBtn').disabled = false;
+    return;
+  }
+
+  // Build context for the API call
+  const contextParts = retrieved.map((r, i) =>
+    `[SOURCE ${i+1}: ${r.chunk.source} chunk ${r.chunk.idx}]\n${r.chunk.text}`
+  ).join('\n\n---\n\n');
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5",
+        max_tokens: 600,
+        system: `You are a support agent assistant for Clearpath Support Systems.
+Answer ONLY from the provided knowledge base excerpts. Do not use outside knowledge.
+If the context does not contain enough information, set "confident" to false.
+Cite which chunk(s) you used using [SOURCE N] references.
+Be concise and actionable. Preserve numbered steps when they appear.
+Respond in this exact JSON format:
+{"confident": true, "answer": "Your answer here.", "sources_used": ["clearpath_faq.txt", "..."]}
+If you cannot answer: {"confident": false, "answer": "", "sources_used": []}`,
+        messages: [{
+          role: "user",
+          content: `Knowledge base excerpts:\n\n${contextParts}\n\nQuestion: ${query}`
+        }]
+      })
+    });
+
+    const data = await response.json();
+    typingDiv.remove();
+
+    let text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    text = text.replace(/^```json?\n?/, '').replace(/\n?```$/, '').trim();
+
+    let parsed;
+    try { parsed = JSON.parse(text); } catch { parsed = { confident: true, answer: text, sources_used: [] }; }
+
+    if (!parsed.confident || !parsed.answer) {
+      const fallback = `<span class="fallback-label">⚠ CANNOT GROUND ANSWER</span>\n\nI couldn't confidently answer from the retrieved context.\n\n<strong>Suggested next steps:</strong>\n• Try rephrasing with different keywords\n• Escalate to your team lead`;
+      addMessage('agent', `<div class="fallback-msg">${fallback}</div>`);
+    } else {
+      const formatted = formatAnswer(parsed.answer);
+      const srcTags = (parsed.sources_used || []).map(s =>
+        `<span class="source-tag">${s.replace('clearpath_', '').replace('.txt', '')}</span>`
+      ).join('');
+      addMessage('agent', formatted, srcTags || null);
+    }
+  } catch (err) {
+    typingDiv.remove();
+    addMessage('agent', `<span style="color:var(--red)">API error: ${escapeHtml(err.message)}</span>`);
+  }
+
+  isLoading = false;
+  document.getElementById('sendBtn').disabled = false;
+}
+
+function formatAnswer(text) {
+  // Bold **text**, convert numbered lists, highlight paths
+  return escapeHtml(text)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\[SOURCE \d+[^\]]*\]/g, m => `<span style="color:var(--blue);font-size:11px;font-family:var(--mono)">${m}</span>`);
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
