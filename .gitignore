@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+.venv/
+
+# Generated at runtime — not committed
+vector_store.json
+
+# OS
+.DS_Store

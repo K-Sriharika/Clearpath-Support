@@ -1,0 +1,13 @@
+# Clearpath RAG Agent — Dependencies
+#
+# Core (required):
+numpy>=1.24.0          # Cosine similarity computation
+
+# Optional (strongly recommended for production):
+anthropic>=0.40.0      # Voyage embeddings + claude-haiku generation
+
+# The agent runs without the anthropic package using TF-IDF fallback
+# for retrieval, but answer generation requires the Anthropic API.
+#
+# To install:
+#   pip install numpy anthropic
