@@ -1,0 +1,19 @@
+v2.4.0 — 2024-11-12
+- Added bulk-close for tickets: select up to 200 tickets from queue and close in one action.
+- Fixed: CSAT survey not sending when ticket closed via API.
+- Fixed: Inbox filter resetting after browser refresh.
+
+v2.3.5 — 2024-10-01
+- Performance: ticket list now loads 60% faster for workspaces with >50k tickets.
+- Added: webhook retry logic — failed webhook deliveries now retry 3 times at 5-minute intervals.
+- Changed: Export date range limit increased from 30 days to 90 days.
+
+v2.3.0 — 2024-09-03
+- Introduced AI Suggested Replies (beta): agents see up to 3 LLM-generated reply suggestions per ticket. Opt in under Settings > AI Features.
+- Added: Custom roles — admins can now define roles beyond Admin/Agent/Viewer.
+- Fixed: Duplicate ticket creation when email contains inline images.
+
+v2.2.0 — 2024-07-15
+- Introduced Label-based routing: tickets with matching Labels are automatically routed to the designated team.
+- Added: Dark mode (beta) — toggle under Profile > Appearance.
+- Fixed: SLA timer not pausing when ticket status set to Pending.
