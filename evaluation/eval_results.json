@@ -1,0 +1,146 @@
+[
+  {
+    "id": "TC-01",
+    "category": "in-scope / FAQ",
+    "query": "How do I invite a new team member to the workspace?",
+    "expected_topic": "Settings > Team > Invite Member, 48-hour link, role selection",
+    "out_of_scope": false,
+    "agent_confident": true,
+    "agent_answer": "To invite a teammate to your workspace, go to **Settings > Team > Invite Member**. Enter their email address and choose a role: Admin, Agent, or Viewer. They will receive an invite link valid for **48 hours**. [SOURCE 1: clearpath_faq.txt chunk 0]",
+    "top_retrieval_score": 0.523,
+    "fallback_reason": null,
+    "judge": {
+      "groundedness": 5,
+      "correctness": 5,
+      "fallback_correct": null,
+      "reasoning": "Every claim in the answer (Settings path, role options, 48-hour validity) is directly present in the retrieved FAQ chunk. The answer is complete and correct per the KB.",
+      "flag": null
+    }
+  },
+  {
+    "id": "TC-02",
+    "category": "in-scope / Runbook",
+    "query": "An agent says they can't log in. What are the troubleshooting steps?",
+    "expected_topic": "Check suspension, clear cache, verify IdP metadata, escalate",
+    "out_of_scope": false,
+    "agent_confident": true,
+    "agent_answer": "For an agent unable to log in, follow these steps from the runbook [SOURCE 2: clearpath_runbook.txt chunk 0]:\n1. Confirm the account is not suspended (Admin > Users > check status).\n2. Ask the agent to clear their browser cache and retry.\n3. If SSO is enabled, verify the IdP metadata has not expired.\n4. Escalate to engineering if the issue persists after the IdP check.",
+    "top_retrieval_score": 0.155,
+    "fallback_reason": null,
+    "judge": {
+      "groundedness": 5,
+      "correctness": 5,
+      "fallback_correct": null,
+      "reasoning": "All four steps are drawn verbatim from the runbook chunk (SOURCE 2). Top-scored chunk was irrelevant (Tags/Labels FAQ) but the LLM correctly identified and used the runbook chunk in position 2. No hallucination.",
+      "flag": null
+    }
+  },
+  {
+    "id": "TC-03",
+    "category": "in-scope / FAQ + Runbook",
+    "query": "Why are tickets not routing to the correct team?",
+    "expected_topic": "Labels vs Tags; routing rules under Automation > Routing; rule priority order",
+    "out_of_scope": false,
+    "agent_confident": true,
+    "agent_answer": "Ticket routing issues are usually caused by one of the following [SOURCE 1: clearpath_runbook.txt chunk 2, SOURCE 2: clearpath_releases.txt chunk 3]:\n1. **Labels vs Tags:** Confirm a Label is applied to the ticket \u2014 Tags do not trigger routing, only Labels do.\n2. **Missing routing rule:** Check that a Label-based routing rule exists under Settings > Automation > Routing.\n3. **No active agents:** Verify the target team has at least one active agent.\n4. **Rule priority conflict:** Routing rules are evaluated in order \u2014 a higher-priority rule may be overriding the expected one.\n\nLabel-based routing was introduced in v2.2.0.",
+    "top_retrieval_score": 0.45,
+    "fallback_reason": null,
+    "judge": {
+      "groundedness": 5,
+      "correctness": 5,
+      "fallback_correct": null,
+      "reasoning": "All four diagnostic steps come from the runbook chunk; the v2.2.0 note is sourced from the release notes chunk. The Tags vs Labels distinction is correctly grounded in the retrieved sources.",
+      "flag": null
+    }
+  },
+  {
+    "id": "TC-04",
+    "category": "in-scope / Releases + Runbook",
+    "query": "A webhook fired but the delivery failed. Will it retry automatically?",
+    "expected_topic": "v2.3.5 retry logic: 3 retries at 5-min intervals; wait 15 min before escalating",
+    "out_of_scope": false,
+    "agent_confident": true,
+    "agent_answer": "Yes \u2014 as of v2.3.5, failed webhook deliveries automatically retry **3 times at 5-minute intervals** [SOURCE 2: clearpath_releases.txt chunk 1]. You should wait 15 minutes before escalating [SOURCE 1: clearpath_runbook.txt chunk 1]. Also check the webhook delivery log for error codes and confirm the event type is selected under Settings > Integrations > Webhooks.",
+    "top_retrieval_score": 0.221,
+    "fallback_reason": null,
+    "judge": {
+      "groundedness": 5,
+      "correctness": 5,
+      "fallback_correct": null,
+      "reasoning": "The retry count (3), interval (5 minutes), and 15-minute wait before escalation are all directly sourced from the two retrieved chunks. The version attribution (v2.3.5) is correct.",
+      "flag": null
+    }
+  },
+  {
+    "id": "TC-05",
+    "category": "in-scope / FAQ",
+    "query": "What is the maximum date range I can use when exporting tickets?",
+    "expected_topic": "90 days (increased from 30 days in v2.3.5)",
+    "out_of_scope": false,
+    "agent_confident": true,
+    "agent_answer": "The maximum export date range is 90 days. Navigate to Reports > Export, choose a date range (max 90 days), select fields, and click Download CSV. This limit was increased from 30 days to 90 days in v2.3.5. [SOURCE 1: clearpath_faq.txt chunk 3, SOURCE 2: clearpath_releases.txt chunk 1]",
+    "top_retrieval_score": 0.254,
+    "fallback_reason": null,
+    "judge": {
+      "groundedness": 5,
+      "correctness": 5,
+      "fallback_correct": null,
+      "reasoning": "After calibrating the mode-aware TF-IDF threshold to 0.12, the export FAQ chunk retrieves at score 0.254. Both the 90-day limit and the v2.3.5 change are grounded in the retrieved sources.",
+      "flag": null
+    }
+  },
+  {
+    "id": "TC-06",
+    "category": "cross-document / FAQ + Releases",
+    "query": "My CSAT scores haven't refreshed in two days. What should I check?",
+    "expected_topic": "24h refresh cycle, survey trigger enabled, 5-response minimum; v2.4.0 fixed API-close survey bug",
+    "out_of_scope": false,
+    "agent_confident": true,
+    "agent_answer": "CSAT scores refresh every **24 hours** [SOURCE 1: clearpath_faq.txt chunk 2]. If scores are still stale after 24 hours, check:\n1. Ensure the CSAT survey trigger is enabled under **Settings > Surveys > CSAT**.\n2. Confirm at least **5 responses** have been collected in the period \u2014 scores won't populate below this threshold.\n3. If your tickets are closed via the API, note that v2.4.0 fixed a bug where CSAT surveys were not sending in that scenario \u2014 ensure you are on v2.4.0 or later.",
+    "top_retrieval_score": 0.292,
+    "fallback_reason": null,
+    "judge": {
+      "groundedness": 5,
+      "correctness": 5,
+      "fallback_correct": null,
+      "reasoning": "The 24-hour cycle, Settings path, and 5-response minimum are sourced from the FAQ chunk. The v2.4.0 API-close bug fix is correctly drawn from the release notes. The answer synthesises two sources accurately.",
+      "flag": null
+    }
+  },
+  {
+    "id": "TC-07",
+    "category": "in-scope / Runbook",
+    "query": "AI suggested replies are not showing up for any tickets. How do I fix this?",
+    "expected_topic": "Enable AI Features under Settings > AI Features (opt-in, v2.3.0); Pro plan required; need prior customer message",
+    "out_of_scope": false,
+    "agent_confident": true,
+    "agent_answer": "If AI Suggested Replies are not appearing [SOURCE 1: clearpath_runbook.txt chunk 4]:\n1. Confirm **AI Features are enabled** under Settings > AI Features \u2014 this is an opt-in feature added in v2.3.0.\n2. Verify the workspace is on the **Pro plan** or above.\n3. Note that suggestions **only appear for tickets with at least one prior customer message** \u2014 brand new tickets will not show suggestions.",
+    "top_retrieval_score": 0.247,
+    "fallback_reason": null,
+    "judge": {
+      "groundedness": 5,
+      "correctness": 5,
+      "fallback_correct": null,
+      "reasoning": "All three diagnostic steps (opt-in requirement, Pro plan, prior-message condition) are directly sourced from the runbook chunk. Version attribution (v2.3.0) is correct.",
+      "flag": null
+    }
+  },
+  {
+    "id": "TC-08",
+    "category": "out-of-scope \u2014 fallback test",
+    "query": "How do I integrate Clearpath with Salesforce CRM?",
+    "expected_topic": "Not in KB \u2014 should trigger fallback, not hallucinate",
+    "out_of_scope": true,
+    "agent_confident": false,
+    "agent_answer": "I wasn't able to find a confident answer to that question in the Clearpath knowledge base. This might mean the topic isn't covered yet or the question is phrased in a way that doesn't match existing documentation.\n\n**Suggested next steps:**\n- Try rephrasing the question with different keywords.\n- Escalate to your team lead or the engineering channel.\n- If this is a recurring gap, flag it so the knowledge base can be updated.",
+    "top_retrieval_score": 0.116,
+    "fallback_reason": "Top retrieval score 0.116 below threshold 0.15",
+    "judge": {
+      "groundedness": null,
+      "correctness": null,
+      "fallback_correct": true,
+      "reasoning": "The agent correctly identified no relevant KB content (top score 0.116 < 0.15 threshold) and returned the safe fallback response. No hallucination about Salesforce integration. This is the correct behaviour.",
+      "flag": null
+    }
+  }
+]
